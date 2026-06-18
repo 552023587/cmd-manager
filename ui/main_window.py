@@ -12,6 +12,7 @@ from PySide2.QtCore import Qt
 from PySide2.QtGui import QFont, QColor, QIcon
 
 from utils.settings_manager import SettingsManager
+from utils import resource_path
 from core.autostart_manager import AutoStartManager
 from core.command_runner import CommandRunner
 from ui.command_card import CommandCard
@@ -45,6 +46,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
+
+        # 设置窗口图标（用 .ico 支持多尺寸）
+        self.setWindowIcon(QIcon(resource_path("icon.ico")))
 
         self._settings = SettingsManager()
         self._autostart = AutoStartManager()
@@ -326,9 +330,7 @@ class MainWindow(QMainWindow):
 
     def _setup_tray(self):
         self._tray = QSystemTrayIcon(self)
-        self._tray.setIcon(self.style().standardIcon(
-            QApplication.style().SP_ComputerIcon
-        ))
+        self._tray.setIcon(QIcon(resource_path("icon.png")))
         self._tray.setToolTip("CmdManager - 命令管理器")
 
         menu = QMenu(self)

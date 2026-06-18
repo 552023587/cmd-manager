@@ -29,6 +29,9 @@ def build_client():
     PyInstaller.__main__.run([
         "main.py",
         "--name=cmdManager",
+        "--add-data=icon.png:.",
+        "--add-data=icon.ico:.",
+        f"--icon={os.path.abspath('icon.ico')}",
         "--windowed",
         "--hidden-import=shiboken2",
         "--hidden-import=PySide2.QtXml",
