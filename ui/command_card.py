@@ -4,7 +4,7 @@
 
 from PySide2.QtWidgets import (QFrame, QLabel, QPushButton,
                               QHBoxLayout, QVBoxLayout, QGraphicsDropShadowEffect)
-from PySide2.QtCore import Signal
+from PySide2.QtCore import Signal, Qt
 from PySide2.QtGui import QFont, QColor
 
 
@@ -17,6 +17,7 @@ class CommandCard(QFrame):
     edit_clicked = Signal()
     delete_clicked = Signal()
     auto_start_toggled = Signal(bool)
+    clicked = Signal()
 
     def __init__(self, name: str, command: str, auto_start: bool,
                  running: bool = False, parent=None):
@@ -25,6 +26,7 @@ class CommandCard(QFrame):
         self._command = command
         self._auto_start = auto_start
         self._running = running
+        self._selected = False
         self._setup_ui()
         self._apply_style()
 
@@ -177,6 +179,12 @@ class CommandCard(QFrame):
         self._update_autostart_btn()
         self.auto_start_toggled.emit(self._auto_start)
 
+    def mousePressEvent(self, event):
+        """点击卡片时发出 clicked 信号（不阻止按钮点击）"""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
     # --- 公共接口 ---
 
     def set_running(self, running: bool):
@@ -184,6 +192,20 @@ class CommandCard(QFrame):
         self._update_status_dot()
         self._run_btn.setVisible(not running)
         self._stop_btn.setVisible(running)
+
+    def set_selected(self, selected: bool):
+        """高亮选中状态"""
+        self._selected = selected
+        if selected:
+            self.setStyleSheet("""
+                CommandCard {
+                    background-color: #1A237E;
+                    border: 2px solid #5C6BC0;
+                    border-radius: 6px;
+                }
+            """)
+        else:
+            self._apply_style()
 
     def set_command(self, command: str):
         self._command = command
@@ -212,19 +234,21 @@ class CommandCard(QFrame):
     # --- hover 效果 ---
 
     def enterEvent(self, event):
-        self.setStyleSheet("""
-            CommandCard {
-                background-color: #303030;
-                border: 1px solid #4A4A4A;
-                border-radius: 6px;
-            }
-        """)
+        if not self._selected:
+            self.setStyleSheet("""
+                CommandCard {
+                    background-color: #303030;
+                    border: 1px solid #4A4A4A;
+                    border-radius: 6px;
+                }
+            """)
 
     def leaveEvent(self, event):
-        self.setStyleSheet("""
-            CommandCard {
-                background-color: #2B2B2B;
-                border: 1px solid #3A3A3A;
-                border-radius: 6px;
-            }
-        """)
+        if not self._selected:
+            self.setStyleSheet("""
+                CommandCard {
+                    background-color: #2B2B2B;
+                    border: 1px solid #3A3A3A;
+                    border-radius: 6px;
+                }
+            """)

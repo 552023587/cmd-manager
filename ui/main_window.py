@@ -396,6 +396,7 @@ class MainWindow(QMainWindow):
         self._runners[name] = runner
 
         # 信号连接
+        card.clicked.connect(lambda n=name: self._on_card_clicked(n))
         card.run_clicked.connect(lambda: self._run_command(name))
         card.stop_clicked.connect(lambda: self._stop_command(name))
         card.restart_clicked.connect(lambda: self._restart_command(name))
@@ -410,6 +411,10 @@ class MainWindow(QMainWindow):
 
         runner = self._runners[name]
         card = self._command_cards[name]
+
+        # 高亮当前卡片
+        for c_name, c in self._command_cards.items():
+            c.set_selected(c_name == name)
 
         # 断开旧连接再重新连接（避免重复）
         try:
@@ -441,6 +446,10 @@ class MainWindow(QMainWindow):
 
         runner = self._runners[name]
         card = self._command_cards[name]
+
+        # 高亮当前卡片
+        for c_name, c in self._command_cards.items():
+            c.set_selected(c_name == name)
 
         runner.stop()
         self._console.clear()
@@ -518,6 +527,9 @@ class MainWindow(QMainWindow):
             self._active_command = ""
             self._console.setVisible(False)
             self._welcome.setVisible(True)
+            # 清除高亮
+            for c in self._command_cards.values():
+                c.set_selected(False)
 
     def _show_console(self, name: str):
         """显示控制台"""
@@ -525,6 +537,35 @@ class MainWindow(QMainWindow):
         self._console.setVisible(True)
         self._console.set_command_name(name)
         self._console.clear()
+
+    def _on_card_clicked(self, name: str):
+        """点击命令卡片：切换到该命令的控制台视图"""
+        # 如果同一个命令或该命令未运行，忽略
+        if name == self._active_command:
+            return
+
+        # 取消所有卡片的高亮
+        for card_name, card in self._command_cards.items():
+            card.set_selected(card_name == name)
+
+        # 切换活动命令
+        self._active_command = name
+
+        # 确保控制台可见
+        self._welcome.setVisible(False)
+        self._console.setVisible(True)
+        self._console.set_command_name(name)
+
+        # 恢复该命令的完整历史输出
+        self._console.clear()
+        if name in self._runners:
+            history = self._runners[name].output()
+            if history:
+                self._console.append(history)
+
+        # 更新运行状态灯
+        if name in self._runners:
+            self._console.set_running(self._runners[name].is_running())
 
     # ── 信号处理 ─────────────────────────────────────────────────
 

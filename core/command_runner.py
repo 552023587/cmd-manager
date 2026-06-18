@@ -3,6 +3,7 @@
 """
 
 import os
+import subprocess
 import tempfile
 from datetime import datetime
 
@@ -41,9 +42,9 @@ class CommandRunner(QObject):
         self._work_dir = work_dir
         self._output = ""
 
-        # 清理旧进程
+        # 清理旧进程（杀死整个进程树）
         if self._process:
-            self._process.kill()
+            self._kill_process_tree()
             self._process.waitForFinished(3000)
             self._process.deleteLater()
             self._process = None
@@ -96,12 +97,28 @@ class CommandRunner(QObject):
         self._restart_timer.stop()
 
         if self._process:
-            self._process.kill()
+            self._kill_process_tree()
             self._process.waitForFinished(3000)
             self._process.deleteLater()
             self._process = None
         self._running = False
         self._cleanup_batch()
+
+    def _kill_process_tree(self):
+        """杀死整个进程树（cmd.exe + 其启动的 python 等子进程）"""
+        if not self._process:
+            return
+        pid = self._process.processId()
+        if pid and pid > 0:
+            try:
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(pid)],
+                    capture_output=True,
+                    timeout=5
+                )
+            except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+                # 备选：只杀当前进程
+                self._process.kill()
 
     def restart(self):
         """重启命令"""
