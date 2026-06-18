@@ -53,6 +53,7 @@ class MainWindow(QMainWindow):
         self._runners: dict[str, CommandRunner] = {}
         self._active_command = ""
         self._drag_pos = None
+        self._is_maximized = False
 
         self._setup_ui()
         self._apply_theme()
@@ -82,8 +83,15 @@ class MainWindow(QMainWindow):
 
         # 主分割器
         self._splitter = QSplitter(Qt.Horizontal, self)
-        self._splitter.setHandleWidth(1)
-        self._splitter.setStyleSheet("QSplitter::handle { background-color: #333333; }")
+        self._splitter.setHandleWidth(4)
+        self._splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #333333;
+            }
+            QSplitter::handle:hover {
+                background-color: #5C6BC0;
+            }
+        """)
 
         self._splitter.addWidget(self._create_sidebar())
         self._splitter.addWidget(self._create_content_area())
@@ -137,6 +145,13 @@ class MainWindow(QMainWindow):
         min_btn.clicked.connect(self.showMinimized)
         layout.addWidget(min_btn)
 
+        # 最大化/还原按钮
+        self._max_btn = QPushButton("□", bar)
+        self._max_btn.setFixedSize(32, 28)
+        self._max_btn.setStyleSheet(self._title_btn_style())
+        self._max_btn.clicked.connect(self._toggle_maximize)
+        layout.addWidget(self._max_btn)
+
         # 关闭按钮
         close_btn = QPushButton("✕", bar)
         close_btn.setFixedSize(32, 28)
@@ -155,7 +170,8 @@ class MainWindow(QMainWindow):
     def _create_sidebar(self) -> QWidget:
         """侧边栏"""
         sidebar = QWidget(self)
-        sidebar.setFixedWidth(260)
+        sidebar.setMinimumWidth(180)
+        sidebar.setMaximumWidth(500)
         sidebar.setStyleSheet("""
             QWidget { background-color: #222222; }
             QScrollBar:vertical {
@@ -283,6 +299,28 @@ class MainWindow(QMainWindow):
             }
             QPushButton:hover { background-color: #333333; border-radius: 4px; }
         """
+
+    def _toggle_maximize(self):
+        """切换最大化/还原"""
+        if self._is_maximized:
+            self._restore_window()
+        else:
+            self._maximize_window()
+
+    def _maximize_window(self):
+        """最大化窗口"""
+        self._is_maximized = True
+        self._max_btn.setText("❐")
+        self._normal_geometry = self.geometry()
+        screen = QApplication.primaryScreen()
+        self.setGeometry(screen.availableGeometry())
+
+    def _restore_window(self):
+        """还原窗口"""
+        self._is_maximized = False
+        self._max_btn.setText("□")
+        if hasattr(self, '_normal_geometry'):
+            self.setGeometry(self._normal_geometry)
 
     # ── 系统托盘 ─────────────────────────────────────────────────
 
